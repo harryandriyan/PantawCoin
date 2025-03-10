@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:PantawCoin}",
+      "name": "Debug PantawCoin",
+      "program": "${workspaceFolder:PantawCoin}/.build/debug/PantawCoin",
+      "preLaunchTask": "swift: Build Debug PantawCoin"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:PantawCoin}",
+      "name": "Release PantawCoin",
+      "program": "${workspaceFolder:PantawCoin}/.build/release/PantawCoin",
+      "preLaunchTask": "swift: Build Release PantawCoin"
+    }
+  ]
+}
