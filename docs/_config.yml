@@ -1,0 +1,8 @@
+theme: jekyll-theme-cayman
+title: PantawCoin
+description: A macOS menu bar app that displays the latest cryptocurrency prices
+show_downloads: true
+github:
+  repository_url: https://github.com/yourusername/PantawCoin
+  zip_url: https://github.com/yourusername/PantawCoin/releases/latest/download/PantawCoin.zip
+  tar_url: https://github.com/yourusername/PantawCoin/releases/latest/download/PantawCoin.dmg
