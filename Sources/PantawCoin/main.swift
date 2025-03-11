@@ -2,7 +2,7 @@ import Cocoa
 import Foundation
 
 // App version and copyright information
-let APP_VERSION = "1.0.4"
+let APP_VERSION = "1.0.5"
 let APP_COPYRIGHT = "© 2025 PantawCoin"
 
 // Helper function to load app icon
