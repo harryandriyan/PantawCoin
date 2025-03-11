@@ -15,11 +15,11 @@ jobs:
       - name: Set up Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: "5.7"
+          swift-version: "5.9"
 
       - name: Build for macOS
         run: |
-          swift build -c release
+          swift build -c release --disable-sandbox
 
       - name: Create app bundle
         run: |
