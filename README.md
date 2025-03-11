@@ -94,6 +94,24 @@ open PantawCoin.app
 
 The app will appear in your menu bar with the Bitcoin symbol (₿) followed by the current Bitcoin price.
 
+## Landing Page
+
+PantawCoin has a landing page built with GitHub Pages. You can view it at:
+
+```
+https://yourusername.github.io/PantawCoin/
+```
+
+### Updating the Landing Page
+
+The landing page is located in the `docs/` directory. To make changes:
+
+1. Edit the files in the `docs/` directory
+2. Commit and push your changes to GitHub
+3. GitHub will automatically rebuild the page
+
+The landing page uses plain HTML, CSS, and JavaScript without any frameworks for simplicity.
+
 ## Usage
 
 Once running, PantawCoin will appear in your menu bar with your primary cryptocurrency price.
