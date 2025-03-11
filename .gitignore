@@ -105,4 +105,10 @@ iOSInjectionProject/
 .AppleDesktop
 Network Trash Folder
 Temporary Items
-.apdisk 
+.apdisk
+
+# PantawCoin specific
+PantawCoin.app/
+PantawCoin.iconset/
+*.dmg
+*.icns 

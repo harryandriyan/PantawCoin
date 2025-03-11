@@ -1,0 +1,89 @@
+name: Build and Release PantawCoin
+
+on:
+  push:
+    tags:
+      - "v*" # Run workflow on version tags, e.g. v1.0.0
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.7"
+
+      - name: Build for macOS
+        run: |
+          swift build -c release
+
+      - name: Create app bundle
+        run: |
+          mkdir -p PantawCoin.app/Contents/{MacOS,Resources}
+          cp .build/release/PantawCoin PantawCoin.app/Contents/MacOS/
+          cp -R Sources/PantawCoin/Resources/* PantawCoin.app/Contents/Resources/
+
+          # Create Info.plist
+          cat > PantawCoin.app/Contents/Info.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>PantawCoin</string>
+              <key>CFBundleIconFile</key>
+              <string>AppIcon</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.pantawcoin.app</string>
+              <key>CFBundleInfoDictionaryVersion</key>
+              <string>6.0</string>
+              <key>CFBundleName</key>
+              <string>PantawCoin</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${GITHUB_REF_NAME#v}</string>
+              <key>CFBundleVersion</key>
+              <string>${GITHUB_REF_NAME#v}</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>12.0</string>
+              <key>LSUIElement</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+          # Create icns file from png
+          mkdir -p PantawCoin.iconset
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/16.png PantawCoin.iconset/icon_16x16.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_16x16@2x.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_32x32.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png PantawCoin.iconset/icon_32x32@2x.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png PantawCoin.iconset/icon_128x128.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_128x128@2x.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_256x256.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_256x256@2x.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_512x512.png
+          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png PantawCoin.iconset/icon_512x512@2x.png
+          iconutil -c icns PantawCoin.iconset -o PantawCoin.app/Contents/Resources/AppIcon.icns
+
+          # Create DMG
+          hdiutil create -volname "PantawCoin" -srcfolder PantawCoin.app -ov -format UDZO PantawCoin-${GITHUB_REF_NAME#v}.dmg
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            PantawCoin-*.dmg
+            .build/release/PantawCoin
+          name: PantawCoin ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

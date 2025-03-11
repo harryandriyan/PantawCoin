@@ -20,7 +20,14 @@ A macOS menu bar app that displays the latest cryptocurrency prices for your fav
 
 ## Installation
 
-### Option 1: Build from Source
+### Option 1: Download the Release
+
+1. Go to the [Releases](https://github.com/yourusername/PantawCoin/releases) page
+2. Download the latest `PantawCoin-x.x.x.dmg` file
+3. Open the DMG file and drag PantawCoin to your Applications folder
+4. Open PantawCoin from your Applications folder
+
+### Option 2: Build from Source
 
 1. Clone this repository:
 
@@ -46,7 +53,7 @@ A macOS menu bar app that displays the latest cryptocurrency prices for your fav
    cp -f ./.build/release/PantawCoin /Applications/
    ```
 
-### Option 2: Add to Login Items
+### Option 3: Add to Login Items
 
 To have PantawCoin start automatically when you log in:
 
@@ -133,6 +140,42 @@ Prices automatically refresh every 5 minutes, but you can manually refresh at an
 ## Data Source
 
 PantawCoin uses the [CoinGecko API](https://www.coingecko.com/en/api) to fetch cryptocurrency prices.
+
+## For Developers
+
+### Release Process
+
+PantawCoin uses GitHub Actions to automate the release process. Here's how to create a new release:
+
+1. Make sure all your changes are committed and pushed to the main branch
+2. Run the release script with the new version number:
+   ```
+   ./scripts/release.sh 1.0.1
+   ```
+3. Push the changes and the new tag:
+   ```
+   git push origin main
+   git push origin v1.0.1
+   ```
+4. GitHub Actions will automatically:
+   - Build the application
+   - Create a macOS app bundle
+   - Package it into a DMG file
+   - Create a GitHub release with the DMG attached
+
+The release will be available on the [Releases](https://github.com/yourusername/PantawCoin/releases) page.
+
+### Rate Limiting
+
+The CoinGecko API has rate limits for free tier users. PantawCoin implements several strategies to handle this:
+
+1. **Caching**: Data is cached for 5 minutes to reduce API calls
+2. **Exponential Backoff**: When rate limited, the app will retry with increasing delays
+3. **Fallback Mechanisms**: When API calls fail, the app will use cached data
+
+If you're experiencing frequent rate limiting, consider:
+- Getting a CoinGecko API key and adding it to the `apiKey` variable in `CryptoDataManager.swift`
+- Increasing the refresh interval in `main.swift` (currently 5 minutes)
 
 ## License
 
