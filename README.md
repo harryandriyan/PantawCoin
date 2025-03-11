@@ -48,9 +48,15 @@ A macOS menu bar app that displays the latest cryptocurrency prices for your fav
    ./.build/release/PantawCoin
    ```
 
-4. (Optional) Copy the app to your Applications folder:
+4. (Optional) Create a proper macOS app bundle:
    ```
-   cp -f ./.build/release/PantawCoin /Applications/
+   ./scripts/build_app.sh
+   open PantawCoin.app
+   ```
+
+5. (Optional) Copy the app to your Applications folder:
+   ```
+   cp -r PantawCoin.app /Applications/
    ```
 
 ### Option 3: Add to Login Items
@@ -77,6 +83,13 @@ Or for the release version:
 
 ```
 ./.build/release/PantawCoin
+```
+
+To create and run a proper macOS app bundle:
+
+```
+./scripts/build_app.sh
+open PantawCoin.app
 ```
 
 The app will appear in your menu bar with the Bitcoin symbol (₿) followed by the current Bitcoin price.

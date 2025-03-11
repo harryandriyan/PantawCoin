@@ -55,6 +55,10 @@ class CryptoMenuBarApp {
     private var isRefreshing = false
     private let appIcon: NSImage?
 
+    // Store a reference to the about window to prevent it from being deallocated
+    private var aboutWindow: NSWindow?
+    private var aboutWindowController: NSWindowController?
+
     init() {
         // Load the app icon
         appIcon = loadAppIcon()
@@ -583,46 +587,120 @@ class CryptoMenuBarApp {
     @objc private func showAbout() {
         print("Showing About dialog")
 
-        // Create a simple alert
-        let alert = NSAlert()
-        alert.messageText = "PantawCoin"
-        alert.informativeText =
-            "Version \(APP_VERSION)\n\(APP_COPYRIGHT)\n\nA simple cryptocurrency price tracker for your menu bar."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-
-        // Add the app icon to the alert
-        if let appIcon = self.appIcon {
-            // Resize the icon to a larger size for the alert (128x128 pixels)
-            let iconSize = NSSize(width: 128, height: 128)
-            let resizedIcon = resizeImage(image: appIcon, to: iconSize)
-            alert.icon = resizedIcon
+        // If the window controller already exists, just bring it to front
+        if let existingController = aboutWindowController {
+            existingController.showWindow(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
         }
 
-        // Create a dummy window to attach the sheet to
-        let dummyWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
-            styleMask: [.titled],
+        // Create a new window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false)
 
-        // Position the window in the center of the screen
-        dummyWindow.center()
+        window.title = "About PantawCoin"
+        window.center()
+        window.isReleasedWhenClosed = false
 
-        // Make it invisible
-        dummyWindow.alphaValue = 0
+        // Create a view controller for the window
+        let viewController = NSViewController()
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        viewController.view = view
 
-        // Show the window briefly to make it the key window
-        dummyWindow.makeKeyAndOrderFront(nil)
-
-        // Activate the app to bring it to the foreground
-        NSApp.activate(ignoringOtherApps: true)
-
-        // Show the alert as a sheet on the dummy window
-        alert.beginSheetModal(for: dummyWindow) { response in
-            // Close and release the dummy window when the alert is dismissed
-            dummyWindow.close()
+        // Add app icon (larger size)
+        let iconView = NSImageView(frame: NSRect(x: 150, y: 180, width: 100, height: 100))
+        if let appIcon = self.appIcon {
+            // Create a larger version of the icon
+            let resizedIcon = resizeImage(image: appIcon, to: NSSize(width: 100, height: 100))
+            iconView.image = resizedIcon
+        } else {
+            let fallbackIcon = NSImage(
+                systemSymbolName: "bitcoinsign.circle", accessibilityDescription: "PantawCoin")
+            iconView.image = fallbackIcon
         }
+        view.addSubview(iconView)
+
+        // Add app name
+        let nameLabel = NSTextField(frame: NSRect(x: 0, y: 150, width: 400, height: 24))
+        nameLabel.stringValue = "PantawCoin"
+        nameLabel.alignment = .center
+        nameLabel.isBezeled = false
+        nameLabel.isEditable = false
+        nameLabel.drawsBackground = false
+        nameLabel.font = NSFont.boldSystemFont(ofSize: 18)
+        view.addSubview(nameLabel)
+
+        // Add version
+        let versionLabel = NSTextField(frame: NSRect(x: 0, y: 120, width: 400, height: 20))
+        versionLabel.stringValue = "Version \(APP_VERSION)"
+        versionLabel.alignment = .center
+        versionLabel.isBezeled = false
+        versionLabel.isEditable = false
+        versionLabel.drawsBackground = false
+        view.addSubview(versionLabel)
+
+        // Add copyright
+        let copyrightLabel = NSTextField(frame: NSRect(x: 0, y: 90, width: 400, height: 20))
+        copyrightLabel.stringValue = APP_COPYRIGHT
+        copyrightLabel.alignment = .center
+        copyrightLabel.isBezeled = false
+        copyrightLabel.isEditable = false
+        copyrightLabel.drawsBackground = false
+        view.addSubview(copyrightLabel)
+
+        // Add description
+        let descLabel = NSTextField(frame: NSRect(x: 20, y: 50, width: 360, height: 40))
+        descLabel.stringValue = "A simple cryptocurrency price tracker for your menu bar."
+        descLabel.alignment = .center
+        descLabel.isBezeled = false
+        descLabel.isEditable = false
+        descLabel.drawsBackground = false
+        descLabel.isSelectable = false
+        descLabel.lineBreakMode = .byWordWrapping
+        view.addSubview(descLabel)
+
+        // Add OK button
+        let okButton = NSButton(frame: NSRect(x: 150, y: 15, width: 100, height: 32))
+        okButton.title = "OK"
+        okButton.bezelStyle = .rounded
+        okButton.target = self
+        okButton.action = #selector(closeAboutWindow)
+        view.addSubview(okButton)
+
+        // Set the content view controller
+        window.contentViewController = viewController
+
+        // Create a window controller to manage the window
+        let windowController = NSWindowController(window: window)
+
+        // Store references
+        aboutWindow = window
+        aboutWindowController = windowController
+
+        // Set up window close notification
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(aboutWindowWillClose(_:)),
+            name: NSWindow.willCloseNotification,
+            object: window
+        )
+
+        // Show the window
+        windowController.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func closeAboutWindow() {
+        aboutWindowController?.close()
+    }
+
+    @objc private func aboutWindowWillClose(_ notification: Notification) {
+        // Don't release the window and controller yet
+        // Just hide the window
+        aboutWindow?.orderOut(nil)
     }
 
     private func showAlert(title: String, message: String) {
