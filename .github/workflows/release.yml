@@ -105,6 +105,12 @@ jobs:
           # Create DMG
           hdiutil create -volname "PantawCoin" -srcfolder PantawCoin.app -ov -format UDZO PantawCoin-${GITHUB_REF_NAME#v}.dmg
 
+      # Add a step to verify the built files exist
+      - name: Verify built files
+        run: |
+          ls -la PantawCoin-*.dmg || echo "DMG file not found!"
+          ls -la .build/release/PantawCoin || echo "Binary not found!"
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -116,5 +122,16 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          # Add this to prevent the default source code archives
+          body: |
+            ## PantawCoin ${{ github.ref_name }}
+
+            ### Installation
+
+            Download the DMG file below and drag the app to your Applications folder.
+
+            ### Changes
+
+            See the release notes below for details on changes in this version.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
