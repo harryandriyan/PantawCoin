@@ -57,6 +57,11 @@ jobs:
               <string>12.0</string>
               <key>LSUIElement</key>
               <true/>
+              <key>NSAppTransportSecurity</key>
+              <dict>
+                  <key>NSAllowsArbitraryLoads</key>
+                  <true/>
+              </dict>
           </dict>
           </plist>
           EOF
@@ -102,7 +107,59 @@ jobs:
             fi
           fi
 
-          # Create DMG
+      # Add code signing step
+      - name: Codesign application
+        run: |
+          # Create a self-signed certificate for code signing
+          echo "Creating self-signed certificate..."
+
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD="temporary-password"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -t 3600 -u "$KEYCHAIN_PATH"
+
+          # Create self-signed certificate
+          echo "Creating self-signed certificate..."
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout "$RUNNER_TEMP/key.pem" \
+            -out "$RUNNER_TEMP/cert.pem" \
+            -subj "/CN=PantawCoin Developer/O=PantawCoin/C=US"
+
+          # Convert to p12 format
+          openssl pkcs12 -export \
+            -inkey "$RUNNER_TEMP/key.pem" \
+            -in "$RUNNER_TEMP/cert.pem" \
+            -out "$RUNNER_TEMP/certificate.p12" \
+            -password pass:"$KEYCHAIN_PASSWORD"
+
+          # Import certificate to keychain
+          security import "$RUNNER_TEMP/certificate.p12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$KEYCHAIN_PASSWORD" \
+            -T /usr/bin/codesign
+
+          # Allow codesign to access the keychain
+          security set-key-partition-list -S apple-tool:,apple: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Get the identity
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          echo "Using identity: $IDENTITY"
+
+          # Sign the app
+          echo "Signing application..."
+          codesign --force --options runtime --sign "$IDENTITY" --timestamp PantawCoin.app
+
+          # Verify signature
+          echo "Verifying signature..."
+          codesign -vvv --deep --strict PantawCoin.app
+
+          # Create DMG with signed app
+          echo "Creating DMG with signed app..."
           hdiutil create -volname "PantawCoin" -srcfolder PantawCoin.app -ov -format UDZO PantawCoin-${GITHUB_REF_NAME#v}.dmg
 
       # Add a step to verify the built files exist
@@ -129,6 +186,13 @@ jobs:
             ### Installation
 
             Download the DMG file below and drag the app to your Applications folder.
+
+            **Important Note**: Since this app is not signed with an Apple Developer certificate, you may need to:
+            1. Right-click (or Control-click) on the app
+            2. Select "Open" from the context menu
+            3. Click "Open" in the dialog that appears
+
+            This only needs to be done the first time you run the app.
 
             ### Changes
 
