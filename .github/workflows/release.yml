@@ -25,7 +25,7 @@ jobs:
         run: |
           mkdir -p PantawCoin.app/Contents/{MacOS,Resources}
           cp .build/release/PantawCoin PantawCoin.app/Contents/MacOS/
-          cp -R Sources/PantawCoin/Resources/* PantawCoin.app/Contents/Resources/
+          cp -R Sources/PantawCoin/Resources/* PantawCoin.app/Contents/Resources/ || echo "Warning: Resources directory may not exist or be empty"
 
           # Create Info.plist
           cat > PantawCoin.app/Contents/Info.plist << EOF
@@ -57,19 +57,46 @@ jobs:
           </plist>
           EOF
 
-          # Create icns file from png
-          mkdir -p PantawCoin.iconset
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/16.png PantawCoin.iconset/icon_16x16.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_16x16@2x.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_32x32.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png PantawCoin.iconset/icon_32x32@2x.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png PantawCoin.iconset/icon_128x128.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_128x128@2x.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_256x256.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_256x256@2x.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_512x512.png
-          cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png PantawCoin.iconset/icon_512x512@2x.png
-          iconutil -c icns PantawCoin.iconset -o PantawCoin.app/Contents/Resources/AppIcon.icns
+          # Create a simple default icon if the icon generation fails
+          mkdir -p PantawCoin.app/Contents/Resources/
+
+          # Check if the AppIcons directory exists
+          if [ -d "Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset" ]; then
+            # Create icns file from png
+            mkdir -p PantawCoin.iconset
+            
+            # Copy icon files with error handling
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/16.png PantawCoin.iconset/icon_16x16.png || echo "Warning: 16.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_16x16@2x.png || echo "Warning: 32.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png PantawCoin.iconset/icon_32x32.png || echo "Warning: 32.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png PantawCoin.iconset/icon_32x32@2x.png || echo "Warning: 64.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png PantawCoin.iconset/icon_128x128.png || echo "Warning: 128.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_128x128@2x.png || echo "Warning: 256.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png PantawCoin.iconset/icon_256x256.png || echo "Warning: 256.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_256x256@2x.png || echo "Warning: 512.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png PantawCoin.iconset/icon_512x512.png || echo "Warning: 512.png not found"
+            cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png PantawCoin.iconset/icon_512x512@2x.png || echo "Warning: 1024.png not found"
+            
+            # Try to generate ICNS file
+            iconutil -c icns PantawCoin.iconset -o PantawCoin.app/Contents/Resources/AppIcon.icns || {
+              echo "Failed to generate ICNS file. Using a fallback method."
+              # If iconutil fails, try to use the largest available icon directly
+              if [ -f "Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png" ]; then
+                cp Sources/PantawCoin/Resources/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png PantawCoin.app/Contents/Resources/AppIcon.png
+                echo "Using 1024.png as AppIcon.png"
+              elif [ -f "Sources/PantawCoin/Resources/AppIcons/appstore.png" ]; then
+                cp Sources/PantawCoin/Resources/AppIcons/appstore.png PantawCoin.app/Contents/Resources/AppIcon.png
+                echo "Using appstore.png as AppIcon.png"
+              fi
+            }
+          else
+            echo "AppIcon.appiconset directory not found. Using fallback icon."
+            # Check if we have an appstore icon as mentioned in the build_app.sh script
+            if [ -f "Sources/PantawCoin/Resources/AppIcons/appstore.png" ]; then
+              cp Sources/PantawCoin/Resources/AppIcons/appstore.png PantawCoin.app/Contents/Resources/AppIcon.icns
+              echo "Using appstore.png as AppIcon.icns"
+            fi
+          fi
 
           # Create DMG
           hdiutil create -volname "PantawCoin" -srcfolder PantawCoin.app -ov -format UDZO PantawCoin-${GITHUB_REF_NAME#v}.dmg
